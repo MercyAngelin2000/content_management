@@ -1,0 +1,42 @@
+Project Structure
+- src/components: Reusable UI and route guard components.
+- src/context: Global providers for auth and toast notifications.
+- src/hooks: Shared hooks (`useAuth`).
+- src/layouts: Role dashboard shell (sidebar + content outlet).
+- src/pages: Auth, teacher, principal, public, and fallback pages.
+- src/services: Dedicated API/service layer (auth/content/approval + http + mock adapter).
+- src/utils: Storage and scheduling helpers.
+
+Authentication Flow
+- Login page validates email/password using React Hook Form + Zod.
+- `AuthContext` calls `authService.login`.
+- Token and user are stored in localStorage.
+- `ProtectedRoute` redirects unauthenticated users to `/login`.
+
+Role-Based Routing
+- Teacher routes: `/teacher/dashboard`, `/teacher/upload`, `/teacher/content`.
+- Principal routes: `/principal/dashboard`, `/principal/approvals`, `/principal/content`.
+- Unauthorized role access is redirected to home.
+- Public route `/live/:teacherId` is open (no auth required).
+
+API Integration Approach
+- Components never call axios/fetch directly.
+- All calls go through:
+  - `auth.service.js`
+  - `content.service.js`
+  - `approval.service.js`
+- A shared `http.js` axios instance injects auth token.
+- Current implementation uses `mockApi.js` for assignment/demo; replaceable by backend endpoints.
+
+State Management Approach
+- Context for global auth and toasts.
+- Page-level local state for table/form/loading/error data.
+- Derived stats use memoization (`useMemo`) to reduce unnecessary recalculation.
+
+Assumptions
+- Mock users:
+  - teacher@school.com / 123456
+  - principal@school.com / 123456
+- Mock data simulates large list handling (~650 records).
+- Scheduling state is UI-derived from start/end timestamps (scheduled/active/expired).
+- Upload preview uses local object URL in this frontend-only setup.

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { contentService } from '../../services/content.service.js';
 import { EmptyState, ErrorState, LoadingState, StatusBadge } from '../../components/ui/Common.jsx';
+import Pagination from '../../components/ui/Pagination.jsx';
 import { getScheduleState } from '../../utils/contentStatus.js';
 
 function MyContentPage() {
@@ -9,6 +10,8 @@ function MyContentPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
   useEffect(() => {
     const load = async () => {
@@ -16,6 +19,7 @@ function MyContentPage() {
       try {
         const data = await contentService.getTeacherContent(user.id);
         setItems(Array.isArray(data) ? data : []);
+        setCurrentPage(1);
       } catch {
         setError('Could not load your content');
       } finally {
@@ -24,6 +28,8 @@ function MyContentPage() {
     };
     load();
   }, [user.id]);
+
+  const paginatedItems = items.slice((currentPage - 1) * perPage, currentPage * perPage);
 
   return (
     <section>
@@ -34,7 +40,7 @@ function MyContentPage() {
       {!loading && !error && items.length === 0 && <div className="mt-4"><EmptyState /></div>}
       {!loading && !error && items.length > 0 && (
         <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {items.slice(0, 200).map((item) => (
+          {paginatedItems.map((item) => (
             <article key={item.id} className="overflow-hidden rounded-2xl border border-white/80 bg-white/90 p-4 shadow-lg shadow-indigo-100/50 transition hover:-translate-y-0.5 hover:shadow-xl">
               <img src={item.fileUrl} alt={item.title} className="h-40 w-full rounded-xl object-cover" loading="lazy" />
               <h3 className="mt-3 font-semibold text-slate-800">{item.title}</h3>
@@ -50,6 +56,18 @@ function MyContentPage() {
             </article>
           ))}
         </div>
+      )}
+      {!loading && !error && items.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalItems={items.length}
+          pageSize={perPage}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => {
+            setPerPage(size);
+            setCurrentPage(1);
+          }}
+        />
       )}
     </section>
   );

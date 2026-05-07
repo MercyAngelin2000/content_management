@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { approvalService } from '../../services/approval.service.js';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/Common.jsx';
 import { useToast } from '../../hooks/useToast.js';
+import Pagination from '../../components/ui/Pagination.jsx';
 
 function PendingApprovalsPage() {
   const toast = useToast();
@@ -11,6 +12,8 @@ function PendingApprovalsPage() {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [reason, setReason] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
   useEffect(() => {
     let active = true;
@@ -20,6 +23,7 @@ function PendingApprovalsPage() {
       try {
         const data = await approvalService.getPending();
         if (active) setItems(Array.isArray(data) ? data : []);
+        if (active) setCurrentPage(1);
       } catch {
         if (active) setError('Unable to load pending approvals');
       } finally {
@@ -31,6 +35,8 @@ function PendingApprovalsPage() {
       active = false;
     };
   }, [reloadKey]);
+
+  const paginatedItems = items.slice((currentPage - 1) * perPage, currentPage * perPage);
 
   const approve = async (id) => {
     try {
@@ -66,7 +72,7 @@ function PendingApprovalsPage() {
       {!loading && !error && items.length === 0 && <div className="mt-4"><EmptyState message="No pending content." /></div>}
       {!loading && !error && items.length > 0 && (
         <div className="mt-5 space-y-4">
-          {items.map((item) => (
+          {paginatedItems.map((item) => (
             <div key={item.id} className="rounded-2xl border border-white/80 bg-white/95 p-4 shadow-lg shadow-orange-100/50">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -92,6 +98,18 @@ function PendingApprovalsPage() {
             </div>
           ))}
         </div>
+      )}
+      {!loading && !error && items.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalItems={items.length}
+          pageSize={perPage}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => {
+            setPerPage(size);
+            setCurrentPage(1);
+          }}
+        />
       )}
 
       {rejectTarget && (

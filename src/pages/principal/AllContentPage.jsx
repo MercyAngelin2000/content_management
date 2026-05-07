@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { contentService } from '../../services/content.service.js';
 import { EmptyState, ErrorState, LoadingState, StatusBadge } from '../../components/ui/Common.jsx';
+import Pagination from '../../components/ui/Pagination.jsx';
 
 function AllContentPage() {
   const [status, setStatus] = useState('all');
@@ -8,6 +9,8 @@ function AllContentPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
   useEffect(() => {
     const load = async () => {
@@ -16,6 +19,7 @@ function AllContentPage() {
       try {
         const data = await contentService.getAllContent({ status, search });
         setItems(Array.isArray(data) ? data : []);
+        setCurrentPage(1);
       } catch {
         setError('Unable to load content list');
       } finally {
@@ -26,6 +30,10 @@ function AllContentPage() {
   }, [status, search]);
 
   const rows = useMemo(() => items.slice(0, 1000), [items]);
+  const pageRows = useMemo(
+    () => rows.slice((currentPage - 1) * perPage, currentPage * perPage),
+    [rows, currentPage, perPage],
+  );
 
   return (
     <section>
@@ -67,7 +75,7 @@ function AllContentPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((item) => (
+              {pageRows.map((item) => (
                 <tr key={item.id} className="border-t border-slate-100 hover:bg-indigo-50/40">
                   <td className="p-3 font-medium text-slate-800">{item.title}</td>
                   <td className="p-3 text-slate-600">{item.subject}</td>
@@ -78,6 +86,18 @@ function AllContentPage() {
             </tbody>
           </table>
         </div>
+      )}
+      {!loading && !error && rows.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalItems={rows.length}
+          pageSize={perPage}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={(size) => {
+            setPerPage(size);
+            setCurrentPage(1);
+          }}
+        />
       )}
     </section>
   );
